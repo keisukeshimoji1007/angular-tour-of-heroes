@@ -5,7 +5,6 @@ import { Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
 import { Hero } from './hero';
-import { HEROES } from './mock-heroes';
 import { MessageService } from './message.service';
 
 const httpOptions = {
@@ -21,6 +20,7 @@ export class HeroService {
   constructor(
     private http: HttpClient,
     private messageService: MessageService) { }
+
    
     /** サーバからヒーローを取得する */
     getHeroes(): Observable<Hero[]> {
@@ -30,9 +30,25 @@ export class HeroService {
        catchError(this.handleError('getHeroes', []))
      );
   }
+  getHeroNo404<Data>(id: number):
+  Observable<Hero> {
+      const url = `${this.heroesUrl}/?
+      id=${id}`;
+      return this.http.get<Hero[]>(url)
+       .pipe(
+         map(heroes => heroes[0]), // {0|1}
+         tap(h => {
+           const outcome = h? `fetched` : `did not find`;
+           this.log(`${outcome} hero id=${id}`);
+         }),
+         catchError(this.handleError<Hero>(`getHero id=${id}`)) 
+       );
+  }
+
+
 
  /** IDによりヒーローを取得する。見つからない場合は404を返却する。 */
-    getHeroNO404(id: number): Observable<Hero> {
+    getHero(id: number): Observable<Hero> {
   const url = `${this.heroesUrl}/${id}`;
   return this.http.get<Hero>(url).pipe(
     tap(_ => this.log(`fetched hero id=${id}`)),
@@ -48,12 +64,6 @@ export class HeroService {
     name=${term}`).pipe(
       tap(_ => this.handleError<Hero[]>('searchHeroes', []))
     );
-  }
-
-    getHero(id: number): Observable<Hero>{
-    // TODO: send the message _after_fetching the hero
-    this.messageService.add(`HeroService: fetched hero id=${id}`);
-    return of(HEROES.find(hero => hero.id === id));
   }
 
   /** ----save---- */
